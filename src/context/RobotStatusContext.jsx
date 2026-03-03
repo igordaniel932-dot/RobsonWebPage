@@ -58,62 +58,59 @@ export const RobotStatusContextProvider = ({children})=>{
             MOVE_ANGLE: false
         }
     })
-    const getControlData = ()=>{
-      //Enable
-      if (!enableRobot.current && 
-        joystickRef.current.buttons[7].value === 1 && 
-        joystickRef.current.buttons[6].value === 1)
-        {
+    const getControlData = () => {
+        // Usa o gatilho L2 (botão 6) como DeadMan. 
+        // O valor do L2 no controle do PS4 vai de 0.0 (solto) a 1.0 (pressionado).
+        // Consideramos "pressionado" se o valor for maior que 0.5 (metade do caminho).
+        const isDeadManPressed = joystickRef.current.buttons[6].value > 0.5;
+
+        // Controle de vibração: só vibra no exato momento que liga ou desliga
+        if (isDeadManPressed && !enableRobot.current) {
             enableRobot.current = true;
-            joystickRef.current.vibrationActuator.playEffect("dual-rumble", {
-            startDelay: 0,
-            duration: 200,
-            weakMagnitude: 1.0,
-            strongMagnitude: 1.0,
-            });
-        }
-        if (enableRobot.current && (
-        joystickRef.current.buttons[7].value !== 1 || 
-        joystickRef.current.buttons[6].value !== 1)){
+            if(joystickRef.current.vibrationActuator) {
+                joystickRef.current.vibrationActuator.playEffect("dual-rumble", {
+                    startDelay: 0, duration: 200, weakMagnitude: 1.0, strongMagnitude: 1.0,
+                });
+            }
+        } else if (!isDeadManPressed && enableRobot.current) {
             enableRobot.current = false;
-            joystickRef.current.vibrationActuator.playEffect("dual-rumble", {
-            startDelay: 0,
-            duration: 200,
-            weakMagnitude: 1.0,
-            strongMagnitude: 1.0,
-            });
+            if(joystickRef.current.vibrationActuator) {
+                joystickRef.current.vibrationActuator.playEffect("dual-rumble", {
+                    startDelay: 0, duration: 200, weakMagnitude: 1.0, strongMagnitude: 1.0,
+                });
+            }
         }
 
-      return {
-        MOVE_ANGLE:{
-            MOVE_X: joystickRef.current.axes[0].toFixed(2),
-            MOVE_Y: joystickRef.current.axes[1].toFixed(2) * -1,
-            MOVE_Z: joystickRef.current.axes[2].toFixed(2),
-        },
-        MOVE_LINEAR:{
-            MOVE_X: joystickRef.current.axes[0].toFixed(2),
-            MOVE_Y: joystickRef.current.axes[1].toFixed(2) * -1,
-            MOVE_Z: joystickRef.current.axes[2].toFixed(2),
-        },
-        MOVE_JOINT: {
-            JOINT1: getAxis1Value(),
-            JOINT2: joystickRef.current.axes[0].toFixed(2),
-            JOINT3: joystickRef.current.axes[1].toFixed(2) * -1,
-            JOINT4: joystickRef.current.axes[2].toFixed(2),
-            JOINT5: joystickRef.current.axes[3].toFixed(2) * -1,
-        },
-        GRIPPER: {
-            OPEN: joystickRef.current.buttons[14].pressed,
-            CLOSE: joystickRef.current.buttons[15].pressed,
-            MOVE_OPEN: joystickRef.current.buttons[12].pressed,
-            MOVE_CLOSE: joystickRef.current.buttons[13].pressed
-        },
-        GENERAL: {
-            DEAD_MAN: enableRobot.current,
-            START_AUTOMATIC: false
-        }
-      }
-    }
+        return {
+            MOVE_ANGLE: {
+                MOVE_X: joystickRef.current.axes[0].toFixed(2),
+                MOVE_Y: joystickRef.current.axes[1].toFixed(2) * -1,
+                MOVE_Z: joystickRef.current.axes[2].toFixed(2),
+            },
+            MOVE_LINEAR: {
+                MOVE_X: joystickRef.current.axes[0].toFixed(2),
+                MOVE_Y: joystickRef.current.axes[1].toFixed(2) * -1,
+                MOVE_Z: joystickRef.current.axes[2].toFixed(2),
+            },
+            MOVE_JOINT: {
+                JOINT1: getAxis1Value(),
+                JOINT2: joystickRef.current.axes[0].toFixed(2),
+                JOINT3: joystickRef.current.axes[1].toFixed(2) * -1,
+                JOINT4: joystickRef.current.axes[2].toFixed(2),
+                JOINT5: joystickRef.current.axes[3].toFixed(2) * -1,
+            },
+            GRIPPER: {
+                OPEN: joystickRef.current.buttons[14].pressed,
+                CLOSE: joystickRef.current.buttons[15].pressed,
+                MOVE_OPEN: joystickRef.current.buttons[12].pressed,
+                MOVE_CLOSE: joystickRef.current.buttons[13].pressed
+            },
+            GENERAL: {
+                DEAD_MAN: enableRobot.current,
+                START_AUTOMATIC: false
+            }
+        };
+    };
 
     const getAxis1Value = ()=>{
         if (joystickRef.current.buttons[0].pressed){
