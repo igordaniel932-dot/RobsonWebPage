@@ -1,42 +1,48 @@
 import { createContext, useState, useEffect } from "react";
-import { useGamepads } from 'react-gamepads';
 
 export const JoystickContext = createContext();
 
-export const JoystickContextProvider = ({children})=>{
-    
+export const JoystickContextProvider = ({children}) => {
     const [joystick, setJoystick] = useState(null);
-    
-    const handleGamepadDisconnected = (event) => {
-        console.log("Gamepad desconectado:", event.gamepad.id);
-        setJoystick(null);
-    };
 
     useEffect(() => {
-        window.addEventListener('gamepaddisconnected', handleGamepadDisconnected);
+        // Função que roda assim que você aperta um botão
+        const handleConnect = (e) => {
+            console.log("🎮 Controle detectado nativamente:", e.gamepad.id);
+            setJoystick(e.gamepad);
+        };
+
+        // Função que roda se você puxar o cabo
+        const handleDisconnect = (e) => {
+            console.log("❌ Controle desconectado.");
+            setJoystick(null);
+        };
+
+        // Liga os "ouvintes" diretos do navegador
+        window.addEventListener("gamepadconnected", handleConnect);
+        window.addEventListener("gamepaddisconnected", handleDisconnect);
+
+        // Varredura de segurança: força a checagem caso o controle já estivesse conectado
+        if (navigator.getGamepads) {
+            const gamepads = navigator.getGamepads();
+            for (let i = 0; i < gamepads.length; i++) {
+                if (gamepads[i] !== null) {
+                    console.log("🎮 Controle já estava plugado:", gamepads[i].id);
+                    setJoystick(gamepads[i]);
+                    break;
+                }
+            }
+        }
+
         return () => {
-            window.removeEventListener('gamepaddisconnected', handleGamepadDisconnected);
+            window.removeEventListener("gamepadconnected", handleConnect);
+            window.removeEventListener("gamepaddisconnected", handleDisconnect);
         };
     }, []);
 
-    useGamepads(gamepads => {
-        if (gamepads && Object.keys(gamepads).length > 0) {
-            // Busca o primeiro controle que não seja nulo na lista
-            const firstActiveGamepad = Object.values(gamepads).find(gp => gp !== null && gp !== undefined);
-            
-            if (firstActiveGamepad) {
-                setJoystick(firstActiveGamepad);
-            } else {
-                setJoystick(null);
-            }
-        } else {
-            setJoystick(null);
-        }
-    });
-
-    return(
-        <JoystickContext.Provider value={{joystick}}>
+    return (
+        <JoystickContext.Provider value={{ joystick }}>
             {children}
-        </JoystickContext.Provider >
-    )
-}
+        </JoystickContext.Provider>
+    );
+};
